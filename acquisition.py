@@ -24,7 +24,8 @@ class acquisition:
         for site in sites:
             self.acq_list[site].append(setting_dict)
     
-    def acquire(self, ctrl, sites = None, save_step=False, save_in_place = True, key_list=None,prefix="",directory = None):
+    def acquire(self, ctrl, autofocus_func=None, sites = None, save_step=False, save_in_place=True,
+                offsets=None, key_list=None,prefix="",directory = None):
         plate = ctrl.plate
         well_imgs = []
         for site_acqs in self.acq_list.items():
@@ -42,10 +43,22 @@ class acquisition:
                 """For each position in the well, take a picture for
                 defined set of acquisition parameters"""
                 acq_params_imgs = []
+                ctrl.autofocus_lock()
                 ctrl.move_stage_abs(*pos)
+                ctrl.autofocus_unlock()
                 pos_str = str([*pos])
+                last_channel = None
                 for pos_param, acq_param in enumerate(acq_presets):
                     ctrl.update_acq_params(acq_param)
+                    current_channel=acq_param["ZeissReflectorTurret-Label"]
+                    if not autofocus_func == None and last_channel is None:
+                        autofocus_func(ctrl)
+                    if not offsets is None and not last_channel is None:
+                        try:
+                            focus_offset=offsets[last_channel][current_channel]
+                            ctrl.set_rel_focus(focus_offset)
+                        except Exception:
+                            print("offset dict missing keys")
                     img = ctrl.snapImg()
                     #add metadata for site number and well label
                     img.metadata["Sites"] = sites
@@ -55,4 +68,5 @@ class acquisition:
                         utils.save_images([img],key_list=key_list,prefix=prefix,directory=directory)
                     else:
                         acq_params_imgs.append(img)
+                    last_channel=acq_param["ZeissReflectorTurret-Label"]
                 pos_list_imgs.append(acq_params_imgs)

@@ -263,10 +263,11 @@ class PlatePanel(wx.Panel):
                 x += w + 1
 
 class PlateDialog(wx.Dialog):
-    def __init__(self, model, parent=None):
+    def __init__(self, model, scope=None, parent=None):
         style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX
         super(PlateDialog, self).__init__(parent, style=style)
         self.model = model
+        self.xyz_calibration = scope.xyz_calibration
         self.SetTitle('Select Wells')
         sizer = self.create_controls(self)
         self.SetSizerAndFit(sizer)
@@ -299,6 +300,12 @@ class PlateDialog(wx.Dialog):
         select_all.Bind(wx.EVT_BUTTON, self.on_select_all)
         select_none = wx.Button(parent, -1, 'Select None')
         select_none.Bind(wx.EVT_BUTTON, self.on_select_none)
+        xyz_calibration = wx.Button(parent, -1, 'Calibrate Stage')
+        xyz_calibration.Bind(wx.EVT_BUTTON, self.on_xyz_calibration)
+        filter_menu = wx.Button(parent, -1, 'Filter Menu')
+        filter_menu.Bind(wx.EVT_BUTTON, self.on_filter_menu)
+        objective_menu = wx.Button(parent, -1, 'Objective Menu')
+        objective_menu.Bind(wx.EVT_BUTTON, self.on_objective_menu)
         ok = wx.Button(parent, wx.ID_OK, 'OK')
         ok.SetDefault()
         cancel = wx.Button(parent, wx.ID_CANCEL, 'Cancel')
@@ -307,6 +314,11 @@ class PlateDialog(wx.Dialog):
         sizer.AddSpacer(8)
         sizer.Add(select_none)
         sizer.AddSpacer(8)
+        sizer.Add(xyz_calibration)
+        sizer.AddSpacer(8)
+        sizer.Add(filter_menu)
+        sizer.AddSpacer(8)
+        sizer.Add(objective_menu)
         sizer.AddStretchSpacer(1)
         sizer.Add(ok)
         sizer.AddSpacer(8)
@@ -319,6 +331,13 @@ class PlateDialog(wx.Dialog):
         self.Refresh()
     def on_select_none(self, event):
         self.model.select_none()
+        self.Refresh()
+    def on_xyz_calibration(self, event):
+        self.xyz_calibration()
+        self.Refresh()
+    def on_filter_menu(self,event):
+        self.Refresh()
+    def on_objective_menu(self,event):
         self.Refresh()
 
 def main(ctrl):
@@ -339,7 +358,7 @@ def main(ctrl):
         ('Move To', on_move_to),
         ('Move To && Scan', on_move_to_and_scan),
     ]
-    dialog = PlateDialog(model)
+    dialog = PlateDialog(model,scope=ctrl)
     dialog.SetSize((800, 700))
     dialog.Center()
     siteDict = {}
